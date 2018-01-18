@@ -45,7 +45,8 @@
 EEMEM unsigned char d; //for duty
 EEMEM unsigned char p; // for preheat duty
 EEMEM unsigned char t; // for preheat time
-EEMEM unsigned char c; // for cell indicator
+EEMEM float c; // for cell indicator
+EEMEM float m; // for max decrease
 
 //display functions define
 int itoa();
@@ -57,6 +58,7 @@ int main(void){
 	//Variables
 	//main
 	int counter;
+	float dutyReset = 30;
 	float duty = 30;
 	int preheatDuty = 30;
 	int percentDuty = duty / 2.55;
@@ -66,6 +68,7 @@ int main(void){
 	char buffer[10];
 
 	int dutyDisplay = 0;
+	int logo = 6;
 	int voltageDisplay = 11;
 	int modeDisplay = 64;
 	int currentDisplay = 75;
@@ -91,25 +94,26 @@ int main(void){
 	int pht5 = 1500;
 
 	//currencies
-	float maxCurrent = 30;
+	//float maxCurrent = 20.0;
 	float fullCurrent;
 	float loadCurrent;
-	float cellIndicatorReset = 48;
-	float cellIndicator = 48;//C = U(V) decrease * I(A)
+	float cellIndicatorReset = 25;
+	float cellIndicator = cellIndicatorReset;//C = U(V) decrease * I(A)
 
-
+	//power
+	//float power;
 
 	//voltages
-	float preVoltage;
 	float voltage;
 	float lowVoltage = 5.6;
-	float loadDecrease;
+	//float loadDecrease;
 	float fullDecrease;
 	float load;
 	float fullLoad;
 	float idle;
 	float minDecrease = 0.1;
-	float maxDecrease = cellIndicator / maxCurrent;
+	float maxDecreaseReset = 1.4;
+	float maxDecrease = maxDecreaseReset;
 
 	//modes
 	unsigned int menuToggle = 0;
@@ -123,6 +127,8 @@ int main(void){
 	int locked = 1;
 	int preheatDutyAdjust  = 0;
 	int preheatTimeAdjust = 0;
+	int calibrate = 0;
+	int maxDecreaseSet = 0;
 	//end of variables
 
 	//ports
@@ -159,7 +165,12 @@ int main(void){
 	duty = eeprom_read_byte(&d); //duty
 	preheatDuty = eeprom_read_byte(&p); // preheat duty
 	preheatTime = eeprom_read_byte(&t); // preheat time
-	cellIndicator = eeprom_read_byte(&c); // cell indicator
+	cellIndicator = eeprom_read_float(&c); // cell indicator
+	maxDecrease = eeprom_read_float(&m); // maxDecrease
+
+	if (cellIndicator > 250) cellIndicator = cellIndicatorReset;
+	if (duty > 255) duty = dutyReset;
+
 
 	while(1){//main loop
 
@@ -169,9 +180,10 @@ int main(void){
 		PORTD &= ~(1<<warm);
 		PORTD |= (1<<backlight);
 
+
 		ADCSRA |= (1<<ADSC); //start
 		while(ADCSRA & (1<<ADSC));
-		voltage = ADC / 50;
+		voltage = (float)ADC / 50;
 
 		while (voltage < lowVoltage)
 		{
@@ -187,7 +199,7 @@ int main(void){
 
 			ADCSRA |= (1<<ADSC); //start
 			while(ADCSRA & (1<<ADSC));
-			voltage = (float)ADC / 50.0;
+			voltage = (float)ADC / 50;
 
 		}
 
@@ -195,13 +207,17 @@ int main(void){
 		if(mode != 2){
 			lcd_goto(dutyDisplay);
 			percentDuty = duty / 2.55;
-			sprintf(buffer, "Duty:%d", percentDuty);
+			sprintf(buffer, "<%d>", percentDuty);
 			lcd_puts(buffer);
 		}
 		else{
 			lcd_goto(dutyDisplay);
-			lcd_puts("          ");
+			lcd_puts("    ");
 		}
+
+		//display logo
+		lcd_goto(logo);
+		lcd_puts("Bart");
 
 		//Display voltage
 		lcd_goto(voltageDisplay);
@@ -209,6 +225,7 @@ int main(void){
 		lcd_puts(buffer);
 
 		//Display mode
+		lcd_goto(modeDisplay);
 		if(mode == 2) lcd_puts("mechanical ");
 		else if(mode == 1) lcd_puts("preheat    ");
 		else if(mode == 0) lcd_puts("pwm        ");
@@ -271,7 +288,7 @@ int main(void){
 		}
 
 		while(menuToggle == 1){
-			if(!(PINC & plus) && (option < 4)){
+			if(!(PINC & plus) && (option < 6)){
 				option = option + 1;
 				_delay_ms(press);
 			}
@@ -286,7 +303,9 @@ int main(void){
 			if (option == 1) lcd_puts("<   mechanical  ");
 			if (option == 2) lcd_puts("<    preheat   >");
 			if (option == 3) lcd_puts("<     pwm      >");
-			if (option == 4) lcd_puts("      lock     >");
+			if (option == 4) lcd_puts("<     lock     >");
+			if (option == 5) lcd_puts("<  calibrate   >");
+			if (option == 6) lcd_puts("   anti-short  >");
 
 
 			if (!(PINC & fire) && (PINC & minus)){
@@ -302,8 +321,9 @@ int main(void){
 						percentDuty = preheatDuty / 2.55;
 						itoa(percentDuty, buffer, 10);
 						lcd_goto(modeDisplay);
+						lcd_puts("<");
 						lcd_puts(buffer);
-						lcd_puts("                 ");
+						lcd_puts(">                ");
 
 						if(!(PINC & fire))
 						{
@@ -331,43 +351,49 @@ int main(void){
 
 						if(preheatTime == 1){
 							itoa(pht1, buffer, 10);
+							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms   ");
+							lcd_puts("ms>   ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 2){
 							itoa(pht2, buffer, 10);
+							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms   ");
+							lcd_puts("ms>   ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 3){
 							itoa(pht3, buffer, 10);
+							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms   ");
+							lcd_puts("ms>   ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 4){
 							itoa(pht4, buffer, 10);
+							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms   ");
+							lcd_puts("ms>   ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 5){
 							itoa(pht5, buffer, 10);
+							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms   ");
+							lcd_puts("ms>   ");
 							_delay_ms(press);
 						}
 
 						if(!(PINC & fire)){
 							preheatTimeAdjust = 0;
 							menuToggle = 0;
-							_delay_ms(splash);
+							lcd_clrscr();
+							_delay_ms(press);
 						}
 
 						if(!(PINC & plus) && (preheatTime < 5)){
@@ -385,8 +411,71 @@ int main(void){
 				}
 				if (option == 3) mode = 0; //pwm
 				if (option == 4) locked = 1;
+				if (option == 5){
+					calibrate = 1;
+					_delay_ms(press);
+					while(calibrate == 1){
+						lcd_goto(dutyDisplay);
+						lcd_puts("Calibrate:");
+						sprintf(buffer, "<%1.f>", cellIndicator);
+						lcd_goto(modeDisplay);
+						lcd_puts(buffer);
+						lcd_puts("                 ");
+
+						if(!(PINC & fire) && (PINC & plus) && (PINC & minus)){
+							calibrate = 0;
+							_delay_ms(press);
+						}
+
+						if(!(PINC & plus) && (cellIndicator < 60) && (PINC & minus) && (PINC & fire)){
+							cellIndicator = cellIndicator + 1;
+							_delay_ms(press);
+						}
+						if(!(PINC & minus) && (cellIndicator > 20) && (PINC & plus) && (PINC & fire)){
+							cellIndicator = cellIndicator - 1;
+							_delay_ms(press);
+						}
+						if(!(PINC & minus) && (PINC & plus) && !(PINC & fire)){
+							cellIndicator = cellIndicatorReset;
+							_delay_ms(press);
+						}
+
+					}
+				}
+				if (option == 6){
+					maxDecreaseSet = 1;
+					_delay_ms(press);
+					while(maxDecreaseSet == 1){
+						lcd_goto(dutyDisplay);
+						lcd_puts("Max decrease:");
+						sprintf(buffer, "<%1.1f>", maxDecrease);
+						lcd_goto(modeDisplay);
+						lcd_puts(buffer);
+						lcd_puts("                 ");
+
+						if(!(PINC & fire) && (PINC & plus) && (PINC & minus)){
+							maxDecreaseSet = 0;
+							_delay_ms(press);
+						}
+
+						if(!(PINC & plus) && (maxDecrease < 1.9) && (PINC & minus) && (PINC & fire)){
+							maxDecrease = maxDecrease + 0.1;
+							_delay_ms(press);
+						}
+						if(!(PINC & minus) && (maxDecrease > 0.9) && (PINC & plus) && (PINC & fire)){
+							maxDecrease = maxDecrease - 0.1;
+							_delay_ms(press);
+						}
+						if(!(PINC & minus) && (PINC & plus) && !(PINC & fire)){
+							maxDecrease = maxDecreaseReset;
+							_delay_ms(press);
+						}
+
+					}
+				}
 
 				menuToggle = 0;
+				lcd_clrscr();
 				_delay_ms(press);
 			}
 		}
@@ -404,7 +493,7 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "Duty:%d", percentDuty);
+				sprintf(buffer, "<%d>", percentDuty);
 				lcd_puts(buffer);
 			}
 			if(counter > slowSteps){
@@ -413,14 +502,13 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "Duty:%d", percentDuty);
+				sprintf(buffer, "<%d>", percentDuty);
 				lcd_puts(buffer);
 			}
 			counter = counter + 1;
 		}
 
 		while(!(PINC & minus) && (PINC & plus) && (PINC & fire) && (duty > 27) && (mode != 2)){
-			PORTD &= ~(1<<warm);
 			duty = duty - 1;
 
 			if(counter < slowSteps){
@@ -429,7 +517,7 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "Duty:%d", percentDuty);
+				sprintf(buffer, "<%d>", percentDuty);
 				lcd_puts(buffer);
 			}
 			if(counter > slowSteps){
@@ -438,7 +526,7 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "Duty:%d", percentDuty);
+				sprintf(buffer, "<%d>", percentDuty);
 				lcd_puts(buffer);
 			}
 			counter = counter + 1;
@@ -449,15 +537,19 @@ int main(void){
 		while(!(PINC & fire) && (PINC & minus) && (PINC & plus)){
 			PORTD |= (1<<warm);
 			TCCR1A |= (1<<COM1A1);
-			maxDecrease = cellIndicator / maxCurrent;
+
+
 			eeprom_write_byte(&d, duty);
+			_delay_ms(20);
+			eeprom_write_float(&c, cellIndicator);
+			_delay_ms(20);
+			eeprom_write_float(&m, maxDecrease);
 			_delay_ms(20);
 			eeprom_write_byte(&p, preheatDuty);
 			_delay_ms(20);
 			eeprom_write_byte(&t, preheatTime);
 			_delay_ms(20);
-			eeprom_write_byte(&c, cellIndicator);
-			_delay_ms(20);
+
 
 			//mech
 			while(!(PINC & fire) && (mode == 2) && (PINC & minus) && (PINC & plus)){
@@ -469,14 +561,14 @@ int main(void){
 			_delay_us(reload);
 			ADCSRA |= (1<<ADSC); //start
 			while(ADCSRA & (1<<ADSC));
-			idle = ADC / 50;
+			idle = (float)ADC / 50;
 
 			//full load
 			OCR1A = 255;
 			_delay_us(reload);
 			ADCSRA |= (1<<ADSC); //start
 			while(ADCSRA & (1<<ADSC));
-			fullLoad = ADC / 50;
+			fullLoad = (float)ADC / 50;
 			OCR1A = 0;
 
 			fullDecrease = idle - fullLoad;
@@ -486,16 +578,16 @@ int main(void){
 			_delay_us(reload);
 			ADCSRA |= (1<<ADSC); //start
 			while(ADCSRA & (1<<ADSC));
-			load = ADC / 50;
+			load = (float)ADC / 50;
 			OCR1A = 0;
 
-			loadDecrease = idle - load;
+			//loadDecrease = idle - load;
 
 			//anti-short
 			while((fullDecrease > maxDecrease) && !(PINC & fire) && (PINC & plus) && (PINC & minus) && (mode !=2)){
 				OCR1A = 0;
 				TCCR1A &= ~(1<<COM1A1);
-
+				lcd_clrscr();
 				lcd_goto(modeDisplay);
 				lcd_puts("Short circuit        ");
 				_delay_ms(splash);
@@ -505,7 +597,7 @@ int main(void){
 			while((fullDecrease < minDecrease) && !(PINC & fire) && (PINC & plus) && (PINC & minus) && (mode !=2)){
 				OCR1A = 0;
 				TCCR1A &= ~(1<<COM1A1);
-
+				lcd_clrscr();
 				lcd_goto(modeDisplay);
 				lcd_puts("No atomizer        ");
 				_delay_ms(splash);
@@ -515,7 +607,7 @@ int main(void){
 			while((load < lowVoltage) && !(PINC & fire) && (PINC & plus) && (PINC & minus) && (mode !=2)){
 				OCR1A = 0;
 				TCCR1A &= ~(1<<COM1A1);
-
+				lcd_clrscr();
 				lcd_goto(modeDisplay);
 				lcd_puts("Low battery        ");
 				_delay_ms(splash);
@@ -531,14 +623,14 @@ int main(void){
 				_delay_us(reload);
 				ADCSRA |= (1<<ADSC); //start
 				while(ADCSRA & (1<<ADSC));
-				idle = ADC / 50;
+				idle = (float)ADC / 50;
 
 				//full load
 				OCR1A = 255;
 				_delay_us(reload);
 				ADCSRA |= (1<<ADSC); //start
 				while(ADCSRA & (1<<ADSC));
-				fullLoad = ADC / 50;
+				fullLoad = (float)ADC / 50;
 				OCR1A = 0;
 
 				fullDecrease = idle - fullLoad;
@@ -548,14 +640,14 @@ int main(void){
 				_delay_us(reload);
 				ADCSRA |= (1<<ADSC); //start
 				while(ADCSRA & (1<<ADSC));
-				load = ADC / 50;
+				load = (float)ADC / 50;
 				OCR1A = 0;
 
-				loadDecrease = idle - load;
+				//loadDecrease = idle - load;
 
 				//Display voltage
 				lcd_goto(voltageDisplay);
-				sprintf(buffer, "%1.2fV", voltage);
+				sprintf(buffer, "%1.2fV", load);
 				lcd_puts(buffer);
 
 				//display ampers
@@ -566,6 +658,7 @@ int main(void){
 				lcd_goto(currentDisplay);
 				sprintf(buffer, "%1.2fA", loadCurrent);
 				lcd_puts(buffer);
+
 
 			}
 
@@ -587,14 +680,14 @@ int main(void){
 					_delay_us(reload);
 					ADCSRA |= (1<<ADSC); //start
 					while(ADCSRA & (1<<ADSC));
-					idle = ADC / 50;
+					idle = (float)ADC / 50;
 
 					//full load
 					OCR1A = 255;
 					_delay_us(reload);
 					ADCSRA |= (1<<ADSC); //start
 					while(ADCSRA & (1<<ADSC));
-					fullLoad = ADC / 50;
+					fullLoad = (float)ADC / 50;
 					OCR1A = 0;
 
 					fullDecrease = idle - fullLoad;
@@ -604,14 +697,14 @@ int main(void){
 					_delay_us(reload);
 					ADCSRA |= (1<<ADSC); //start
 					while(ADCSRA & (1<<ADSC));
-					load = ADC / 50;
+					load = (float)ADC / 50;
 					OCR1A = 0;
 
-					loadDecrease = idle - load;
+					//loadDecrease = idle - load;
 
 					//Display voltage
 					lcd_goto(voltageDisplay);
-					sprintf(buffer, "%1.2fV", voltage);
+					sprintf(buffer, "%1.2fV", load);
 					lcd_puts(buffer);
 
 					//display ampers
