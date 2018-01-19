@@ -148,7 +148,9 @@ int main(void){
 	//hardware PWM define
 	TCCR1A |= (1<<WGM10);//mode-fastPWM
 	TCCR1B |= (1<<WGM12);
-	TCCR1B |= (1<<CS11);//prescaler: 8
+	//prescaler-freq= clock/prescaler/256
+	TCCR1B |= (1<<CS10); //1
+	//TCCR1B |= (1<<CS11); //8
 	OCR1A = 0;//pwm out LOW
 	TCCR1A &= ~(1<<COM1A1); //pwm off
 
