@@ -6,7 +6,10 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1
+ *      v3.1.1
+ *
+ *      changelog:
+ *      3.1.1- rewrited for 8x2 disply
  *
  *      Pinout:
  *      25(PC2) fire
@@ -22,8 +25,8 @@
  *      12(PD6) backlight
  *
  *      02-05(PD0-PD3) Display out
- *      PB7- RS line
- *      PD5- E line
+ *      10(PB7)- RS line
+ *      11(PD5)- E line
  */
 
 
@@ -68,10 +71,10 @@ int main(void){
 	char buffer[10];
 
 	int dutyDisplay = 0;
-	int logo = 6;
-	int voltageDisplay = 11;
+	//int logo = 6;
+	int voltageDisplay = 4;
 	int modeDisplay = 64;
-	int currentDisplay = 75;
+	int currentDisplay = 68;
 
 	//times
 	int lowBlink = 120;//blinking at low input
@@ -194,7 +197,7 @@ int main(void){
 
 			lcd_clrscr();
 			lcd_goto(modeDisplay);
-			lcd_puts("Low voltage");
+			lcd_puts("LV!");
 
 			PORTD ^= (1<<warm) | (1<<backlight);
 			_delay_ms(lowBlink);
@@ -209,32 +212,35 @@ int main(void){
 		if(mode != 2){
 			lcd_goto(dutyDisplay);
 			percentDuty = duty / 2.55;
-			sprintf(buffer, "<%d>", percentDuty);
+			sprintf(buffer, ">%d", percentDuty);
 			lcd_puts(buffer);
 		}
 		else{
 			lcd_goto(dutyDisplay);
-			lcd_puts("    ");
+			lcd_puts("  ");
 		}
 
 		//display logo
-		lcd_goto(logo);
-		lcd_puts("Bart");
+		//lcd_goto(logo);
+		//lcd_puts("Bart");
 
 		//Display voltage
 		lcd_goto(voltageDisplay);
-		sprintf(buffer, "%1.2fV", voltage);
+		sprintf(buffer, "%1.1fV", voltage);
 		lcd_puts(buffer);
 
 		//Display mode
 		lcd_goto(modeDisplay);
-		if(mode == 2) lcd_puts("mechanical ");
-		else if(mode == 1) lcd_puts("preheat    ");
-		else if(mode == 0) lcd_puts("pwm        ");
+		if(mode == 2) lcd_puts("m   ");
+		else if(mode == 1) lcd_puts("ph  ");
+		else if(mode == 0) lcd_puts("pwm ");
 
 		//Display current
-		lcd_goto(currentDisplay);
-		lcd_puts("0.00A");
+		if (mode != 2){
+			lcd_goto(currentDisplay);
+			lcd_puts("0A");
+		}
+
 
 		//lock
 		while(locked == 1){
@@ -242,16 +248,16 @@ int main(void){
 			PORTD &= ~(1<<backlight);
 
 			lcd_goto(dutyDisplay);
-			lcd_puts("          ");
+			lcd_puts("   ");
 
 			//Display voltage
 			lcd_goto(voltageDisplay);
-			sprintf(buffer, "%1.2fV", voltage);
+			sprintf(buffer, "%1.1fV", voltage);
 			lcd_puts(buffer);
 
 			//DM
 			lcd_goto(modeDisplay);
-			lcd_puts("locked          ");
+			lcd_puts("locked  ");
 
 			PORTC |= (1<<stb);
 			_delay_ms(lockBlink);
@@ -262,7 +268,7 @@ int main(void){
 				lcd_init();
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("Unlocking...");
+				lcd_puts("wait... ");
 				PORTD |= (1<<backlight);
 				_delay_ms(unlocking);
 
@@ -271,9 +277,9 @@ int main(void){
 					locked = 0;
 					PORTC |= (1<<stb);
 					lcd_clrscr();
-					lcd_puts("Ampera NOVA");
+					lcd_puts("Bart's");
 					lcd_goto(modeDisplay);
-					lcd_puts("Bart's second v3");
+					lcd_puts("NOVA");
 					_delay_ms(splash);
 					lcd_clrscr();
 				}
@@ -285,8 +291,8 @@ int main(void){
 			menuToggle = 1;
 			option = 4;
 			lcd_clrscr();
-			lcd_puts("Menu");
-			_delay_ms(splash);
+			lcd_puts("menu");
+			_delay_ms(unlocking);
 		}
 
 		while(menuToggle == 1){
@@ -302,12 +308,12 @@ int main(void){
 
 			lcd_goto(modeDisplay);
 
-			if (option == 1) lcd_puts("<   mechanical  ");
-			if (option == 2) lcd_puts("<    preheat   >");
-			if (option == 3) lcd_puts("<     pwm      >");
-			if (option == 4) lcd_puts("<     lock     >");
-			if (option == 5) lcd_puts("<  calibrate   >");
-			if (option == 6) lcd_puts("   anti-short  >");
+			if (option == 1) lcd_puts(">M      ");
+			if (option == 2) lcd_puts(">P M    ");
+			if (option == 3) lcd_puts(">N P M  ");
+			if (option == 4) lcd_puts(">L N P M");
+			if (option == 5) lcd_puts(">c L N P");
+			if (option == 6) lcd_puts(">a c L N");
 
 
 			if (!(PINC & fire) && (PINC & minus)){
@@ -319,13 +325,13 @@ int main(void){
 
 					while(preheatDutyAdjust == 1){
 						lcd_goto(dutyDisplay);
-						lcd_puts("Preheat duty:");
+						lcd_puts("PH duty:");
 						percentDuty = preheatDuty / 2.55;
 						itoa(percentDuty, buffer, 10);
 						lcd_goto(modeDisplay);
 						lcd_puts("<");
 						lcd_puts(buffer);
-						lcd_puts(">                ");
+						lcd_puts(">    ");
 
 						if(!(PINC & fire))
 						{
@@ -348,14 +354,14 @@ int main(void){
 					while(preheatTimeAdjust == 1){
 						if (preheatTime > 5) preheatTime = 1;
 						lcd_goto(dutyDisplay);
-						lcd_puts("Preheat time:            ");
+						lcd_puts("PH time:");
 						lcd_goto(modeDisplay);
 
 						if(preheatTime == 1){
 							itoa(pht1, buffer, 10);
 							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms>   ");
+							lcd_puts("ms> ");
 							_delay_ms(press);
 						}
 
@@ -363,7 +369,7 @@ int main(void){
 							itoa(pht2, buffer, 10);
 							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms>   ");
+							lcd_puts("ms> ");
 							_delay_ms(press);
 						}
 
@@ -371,7 +377,7 @@ int main(void){
 							itoa(pht3, buffer, 10);
 							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms>   ");
+							lcd_puts("ms> ");
 							_delay_ms(press);
 						}
 
@@ -379,7 +385,7 @@ int main(void){
 							itoa(pht4, buffer, 10);
 							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms>   ");
+							lcd_puts("ms> ");
 							_delay_ms(press);
 						}
 
@@ -387,7 +393,7 @@ int main(void){
 							itoa(pht5, buffer, 10);
 							lcd_puts("<");
 							lcd_puts(buffer);
-							lcd_puts("ms>   ");
+							lcd_puts("ms> ");
 							_delay_ms(press);
 						}
 
@@ -418,11 +424,11 @@ int main(void){
 					_delay_ms(press);
 					while(calibrate == 1){
 						lcd_goto(dutyDisplay);
-						lcd_puts("Calibrate:");
+						lcd_puts("amp cal:");
 						sprintf(buffer, "<%1.f>", cellIndicator);
 						lcd_goto(modeDisplay);
 						lcd_puts(buffer);
-						lcd_puts("                 ");
+						lcd_puts("    ");
 
 						if(!(PINC & fire) && (PINC & plus) && (PINC & minus)){
 							calibrate = 0;
@@ -449,11 +455,11 @@ int main(void){
 					_delay_ms(press);
 					while(maxDecreaseSet == 1){
 						lcd_goto(dutyDisplay);
-						lcd_puts("Max decrease:");
-						sprintf(buffer, "<%1.1f>", maxDecrease);
+						lcd_puts("max dec:");
+						sprintf(buffer, "<%1.1fV>", maxDecrease);
 						lcd_goto(modeDisplay);
 						lcd_puts(buffer);
-						lcd_puts("                 ");
+						lcd_puts("   ");
 
 						if(!(PINC & fire) && (PINC & plus) && (PINC & minus)){
 							maxDecreaseSet = 0;
@@ -495,7 +501,7 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "<%d>", percentDuty);
+				sprintf(buffer, ">%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			if(counter > slowSteps){
@@ -504,7 +510,7 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "<%d>", percentDuty);
+				sprintf(buffer, ">%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			counter = counter + 1;
@@ -519,7 +525,7 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "<%d>", percentDuty);
+				sprintf(buffer, ">%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			if(counter > slowSteps){
@@ -528,7 +534,7 @@ int main(void){
 
 				lcd_goto(dutyDisplay);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, "<%d>", percentDuty);
+				sprintf(buffer, ">%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			counter = counter + 1;
@@ -556,6 +562,20 @@ int main(void){
 			//mech
 			while(!(PINC & fire) && (mode == 2) && (PINC & minus) && (PINC & plus)){
 				OCR1A = 255;
+
+				ADCSRA |= (1<<ADSC); //start
+				while(ADCSRA & (1<<ADSC));
+				voltage = (float)ADC / 50;
+
+				lcd_goto(voltageDisplay);
+				sprintf(buffer, "%1.1fV", voltage);
+				lcd_puts(buffer);
+
+				lcd_goto(currentDisplay);
+				lcd_puts("    ");
+
+
+
 			}
 
 			//check idle
@@ -591,7 +611,7 @@ int main(void){
 				TCCR1A &= ~(1<<COM1A1);
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("Short circuit        ");
+				lcd_puts("Short!!");
 				_delay_ms(splash);
 			}
 
@@ -601,7 +621,7 @@ int main(void){
 				TCCR1A &= ~(1<<COM1A1);
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("No atomizer        ");
+				lcd_puts("No load");
 				_delay_ms(splash);
 			}
 
@@ -611,7 +631,7 @@ int main(void){
 				TCCR1A &= ~(1<<COM1A1);
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("Low battery        ");
+				lcd_puts("LV!!");
 				_delay_ms(splash);
 			}
 
@@ -649,7 +669,7 @@ int main(void){
 
 				//Display voltage
 				lcd_goto(voltageDisplay);
-				sprintf(buffer, "%1.2fV", load);
+				sprintf(buffer, "%1.1fV", load);
 				lcd_puts(buffer);
 
 				//display ampers
@@ -658,8 +678,9 @@ int main(void){
 				loadCurrent = fullCurrent * (duty * 0.004);
 
 				lcd_goto(currentDisplay);
-				sprintf(buffer, "%1.2fA", loadCurrent);
+				sprintf(buffer, "%1.fA", loadCurrent);
 				lcd_puts(buffer);
+				lcd_puts(" ");
 
 
 			}
@@ -706,7 +727,7 @@ int main(void){
 
 					//Display voltage
 					lcd_goto(voltageDisplay);
-					sprintf(buffer, "%1.2fV", load);
+					sprintf(buffer, "%1.1fV", load);
 					lcd_puts(buffer);
 
 					//display ampers
@@ -715,8 +736,9 @@ int main(void){
 					loadCurrent = fullCurrent * (duty * 0.004);
 
 					lcd_goto(currentDisplay);
-					sprintf(buffer, "%1.2fA", loadCurrent);
+					sprintf(buffer, "%1.fA", loadCurrent);
 					lcd_puts(buffer);
+					lcd_puts(" ");
 				}
 			}//preheat warming
 			//pwm off
