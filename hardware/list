@@ -1,0 +1,13 @@
+THT 1x stabilizator/stabilizer low dropout 5V
+THT 1x buzzer <40mA 5V
+THT 1x kondensator/capacitor 100uF 16V
+SMD 4x niebieski led wskaźnika/blue led of indicator
+SMD 7x opornik/resistor 1k(4x led wskaźnika, 1x led grzania, 1x tranzystor, 1x dzielnik do ADC 
+SMD 2x opornik/resistor 3k(1x led czuwania, 1x dzielnik do ADC)
+SMD 1x led czerwony/red
+SMD 1x led zielony/green
+SMD 4x kondensator/capacitor 100nF(2x do stabilizatora, 2x do ADC)
+SMD 1x IRLR8743
+THT 2x tact switch
+SMD 1x dławik/coil 10uH
+THT 1x Atmega 328P & USBasp for program this :)
