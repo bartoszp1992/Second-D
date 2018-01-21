@@ -6,10 +6,11 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1.1
+ *      v3.1.2
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
+ *      3.1.2- correct amperometer formula
  *
  *      Pinout:
  *      25(PC2) fire
@@ -86,7 +87,7 @@ int main(void){
 	int unlocking = 800; //unlocking delay
 	int splash = 1500;//splash screen
 	int warmingDelay = 240;
-	int reload = 350; //capacitor reload
+	int reload = 350; //capacitor reload(us)(350 for 100uF)
 
 	//preheat presets
 	int preheatTime = 1;//default preheat time
@@ -101,7 +102,7 @@ int main(void){
 	float fullCurrent;
 	float loadCurrent;
 	float cellIndicatorReset = 25;
-	float cellIndicator = cellIndicatorReset;//C = U(V) decrease * I(A)
+	float cellIndicator = cellIndicatorReset;//C = I(A) / U(V) decrease
 
 	//power
 	//float power;
@@ -175,6 +176,19 @@ int main(void){
 
 	if (cellIndicator > 250) cellIndicator = cellIndicatorReset;
 	if (duty > 255) duty = dutyReset;
+
+
+	//splash
+	PORTC |= (1<<stb);
+	PORTD |= (1<<warm);
+	PORTD |= (1<<backlight);
+	lcd_init();
+	lcd_clrscr();
+	lcd_puts("Bart's");
+	lcd_goto(modeDisplay);
+	lcd_puts("NOVA");
+	_delay_ms(splash);
+	lcd_clrscr();
 
 
 	while(1){//main loop
@@ -276,6 +290,9 @@ int main(void){
 					menuToggle = 0;
 					locked = 0;
 					PORTC |= (1<<stb);
+					PORTD |= (1<<warm);
+					PORTD |= (1<<backlight);
+					lcd_init();
 					lcd_clrscr();
 					lcd_puts("Bart's");
 					lcd_goto(modeDisplay);
@@ -435,11 +452,11 @@ int main(void){
 							_delay_ms(press);
 						}
 
-						if(!(PINC & plus) && (cellIndicator < 60) && (PINC & minus) && (PINC & fire)){
+						if(!(PINC & plus) && (cellIndicator < 40) && (PINC & minus) && (PINC & fire)){
 							cellIndicator = cellIndicator + 1;
 							_delay_ms(press);
 						}
-						if(!(PINC & minus) && (cellIndicator > 20) && (PINC & plus) && (PINC & fire)){
+						if(!(PINC & minus) && (cellIndicator > 10) && (PINC & plus) && (PINC & fire)){
 							cellIndicator = cellIndicator - 1;
 							_delay_ms(press);
 						}
@@ -470,7 +487,7 @@ int main(void){
 							maxDecrease = maxDecrease + 0.1;
 							_delay_ms(press);
 						}
-						if(!(PINC & minus) && (maxDecrease > 0.9) && (PINC & plus) && (PINC & fire)){
+						if(!(PINC & minus) && (maxDecrease > 0.1) && (PINC & plus) && (PINC & fire)){
 							maxDecrease = maxDecrease - 0.1;
 							_delay_ms(press);
 						}
@@ -674,13 +691,13 @@ int main(void){
 
 				//display ampers
 				_delay_us(reload);
-				fullCurrent = cellIndicator / fullDecrease;
+				fullCurrent = cellIndicator * fullDecrease;
 				loadCurrent = fullCurrent * (duty * 0.004);
 
 				lcd_goto(currentDisplay);
 				sprintf(buffer, "%1.fA", loadCurrent);
 				lcd_puts(buffer);
-				lcd_puts(" ");
+				lcd_puts("   ");
 
 
 			}
@@ -732,13 +749,13 @@ int main(void){
 
 					//display ampers
 					_delay_us(reload);
-					fullCurrent = cellIndicator / fullDecrease;
+					fullCurrent = cellIndicator * fullDecrease;
 					loadCurrent = fullCurrent * (duty * 0.004);
 
 					lcd_goto(currentDisplay);
 					sprintf(buffer, "%1.fA", loadCurrent);
 					lcd_puts(buffer);
-					lcd_puts(" ");
+					lcd_puts("   ");
 				}
 			}//preheat warming
 			//pwm off
