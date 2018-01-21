@@ -1,5 +1,5 @@
 # Second-D
 PWM Driver
- Only main.c file is my autorship. 
- 
- Other files are a HD44780 Library, and there are under its own proprietary license.
+
+Warning! Files included in the zip package are the HD44780 Library. It's not my autorship, and it's under own proprietary license.
+
