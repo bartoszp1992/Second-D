@@ -186,7 +186,7 @@ int main(void){
 	lcd_clrscr();
 	lcd_puts("Bart's");
 	lcd_goto(modeDisplay);
-	lcd_puts("NOVA");
+	lcd_puts("Second 3");
 	_delay_ms(splash);
 	lcd_clrscr();
 
@@ -211,7 +211,7 @@ int main(void){
 
 			lcd_clrscr();
 			lcd_goto(modeDisplay);
-			lcd_puts("LV!");
+			lcd_puts("Low bat!");
 
 			PORTD ^= (1<<warm) | (1<<backlight);
 			_delay_ms(lowBlink);
@@ -282,7 +282,7 @@ int main(void){
 				lcd_init();
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("wait... ");
+				lcd_puts("hold... ");
 				PORTD |= (1<<backlight);
 				_delay_ms(unlocking);
 
@@ -296,7 +296,7 @@ int main(void){
 					lcd_clrscr();
 					lcd_puts("Bart's");
 					lcd_goto(modeDisplay);
-					lcd_puts("NOVA");
+					lcd_puts("Second 3");
 					_delay_ms(splash);
 					lcd_clrscr();
 				}
@@ -648,7 +648,7 @@ int main(void){
 				TCCR1A &= ~(1<<COM1A1);
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("LV!!");
+				lcd_puts("Low bat!");
 				_delay_ms(splash);
 			}
 
