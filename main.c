@@ -6,11 +6,12 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1.2
+ *      v3.1.3
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
  *      3.1.2- correct amperometer formula
+ *      3.1.3- better warming
  *
  *      Pinout:
  *      25(PC2) fire
@@ -680,7 +681,6 @@ int main(void){
 				ADCSRA |= (1<<ADSC); //start
 				while(ADCSRA & (1<<ADSC));
 				load = (float)ADC / 50;
-				OCR1A = 0;
 
 				//loadDecrease = idle - load;
 
@@ -738,7 +738,6 @@ int main(void){
 					ADCSRA |= (1<<ADSC); //start
 					while(ADCSRA & (1<<ADSC));
 					load = (float)ADC / 50;
-					OCR1A = 0;
 
 					//loadDecrease = idle - load;
 
