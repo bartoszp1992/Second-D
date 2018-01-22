@@ -6,12 +6,13 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1.3
+ *      v3.1.4
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
  *      3.1.2- correct amperometer formula
  *      3.1.3- better warming
+ *      3.1.4- correct times ant voltages
  *
  *      Pinout:
  *      25(PC2) fire
@@ -116,7 +117,7 @@ int main(void){
 	float load;
 	float fullLoad;
 	float idle;
-	float minDecrease = 0.1;
+	float minDecrease = 0.05;
 	float maxDecreaseReset = 1.4;
 	float maxDecrease = maxDecreaseReset;
 
@@ -627,6 +628,8 @@ int main(void){
 			while((fullDecrease > maxDecrease) && !(PINC & fire) && (PINC & plus) && (PINC & minus) && (mode !=2)){
 				OCR1A = 0;
 				TCCR1A &= ~(1<<COM1A1);
+				_delay_ms(press);
+				lcd_init();
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
 				lcd_puts("Short!!");
