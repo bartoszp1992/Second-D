@@ -6,13 +6,14 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1.4
+ *      v3.1.5
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
  *      3.1.2- correct amperometer formula
  *      3.1.3- better warming
  *      3.1.4- correct times ant voltages
+ *      3.1.5- now load voltage is counted, not measured.
  *
  *      Pinout:
  *      25(PC2) fire
@@ -112,7 +113,6 @@ int main(void){
 	//voltages
 	float voltage;
 	float lowVoltage = 5.6;
-	//float loadDecrease;
 	float fullDecrease;
 	float load;
 	float fullLoad;
@@ -615,14 +615,8 @@ int main(void){
 			fullDecrease = idle - fullLoad;
 
 			//load
-			OCR1A = duty;
-			_delay_us(reload);
-			ADCSRA |= (1<<ADSC); //start
-			while(ADCSRA & (1<<ADSC));
-			load = (float)ADC / 50;
-			OCR1A = 0;
+			load = idle - (fullDecrease * (duty / 255));
 
-			//loadDecrease = idle - load;
 
 			//anti-short
 			while((fullDecrease > maxDecrease) && !(PINC & fire) && (PINC & plus) && (PINC & minus) && (mode !=2)){
@@ -679,13 +673,12 @@ int main(void){
 				fullDecrease = idle - fullLoad;
 
 				//load
-				OCR1A = duty;
-				_delay_us(reload);
-				ADCSRA |= (1<<ADSC); //start
-				while(ADCSRA & (1<<ADSC));
-				load = (float)ADC / 50;
+				load = idle - (fullDecrease * (duty / 255));
 
-				//loadDecrease = idle - load;
+				//current
+				fullCurrent = cellIndicator * fullDecrease;
+				loadCurrent = fullCurrent * (duty * 0.004);
+
 
 				//Display voltage
 				lcd_goto(voltageDisplay);
@@ -693,7 +686,6 @@ int main(void){
 				lcd_puts(buffer);
 
 				//display ampers
-				_delay_us(reload);
 				fullCurrent = cellIndicator * fullDecrease;
 				loadCurrent = fullCurrent * (duty * 0.004);
 
@@ -718,7 +710,7 @@ int main(void){
 					OCR1A = duty;
 					_delay_ms(warmingDelay);
 
-					//check idle
+					//idle
 					OCR1A = 0;
 					_delay_us(reload);
 					ADCSRA |= (1<<ADSC); //start
@@ -736,11 +728,11 @@ int main(void){
 					fullDecrease = idle - fullLoad;
 
 					//load
-					OCR1A = duty;
-					_delay_us(reload);
-					ADCSRA |= (1<<ADSC); //start
-					while(ADCSRA & (1<<ADSC));
-					load = (float)ADC / 50;
+					load = idle - (fullDecrease * (duty / 255));
+
+					//current
+					fullCurrent = cellIndicator * fullDecrease;
+					loadCurrent = fullCurrent * (duty * 0.004);
 
 					//loadDecrease = idle - load;
 
@@ -750,10 +742,6 @@ int main(void){
 					lcd_puts(buffer);
 
 					//display ampers
-					_delay_us(reload);
-					fullCurrent = cellIndicator * fullDecrease;
-					loadCurrent = fullCurrent * (duty * 0.004);
-
 					lcd_goto(currentDisplay);
 					sprintf(buffer, "%1.fA", loadCurrent);
 					lcd_puts(buffer);
