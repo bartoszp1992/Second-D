@@ -686,9 +686,6 @@ int main(void){
 				lcd_puts(buffer);
 
 				//display ampers
-				fullCurrent = cellIndicator * fullDecrease;
-				loadCurrent = fullCurrent * (duty * 0.004);
-
 				lcd_goto(currentDisplay);
 				sprintf(buffer, "%1.fA", loadCurrent);
 				lcd_puts(buffer);
@@ -754,7 +751,3 @@ int main(void){
 		}//warming
 	}//main loop
 }//program
-
-
-
-
