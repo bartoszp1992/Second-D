@@ -677,7 +677,7 @@ int main(void){
 
 				//current
 				fullCurrent = cellIndicator * fullDecrease;
-				loadCurrent = fullCurrent * (duty * 0.004);
+				loadCurrent = fullCurrent * (duty / 255);
 
 
 				//Display voltage
@@ -729,7 +729,7 @@ int main(void){
 
 					//current
 					fullCurrent = cellIndicator * fullDecrease;
-					loadCurrent = fullCurrent * (duty * 0.004);
+					loadCurrent = fullCurrent * (duty / 255);
 
 					//loadDecrease = idle - load;
 
@@ -751,3 +751,7 @@ int main(void){
 		}//warming
 	}//main loop
 }//program
+
+
+
+
