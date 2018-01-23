@@ -6,7 +6,7 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1.5
+ *      v3.1.6
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
@@ -14,6 +14,7 @@
  *      3.1.3- better warming
  *      3.1.4- correct times ant voltages
  *      3.1.5- now load voltage is counted, not measured.
+ *      3.1.6- added power counter
  *
  *      Pinout:
  *      25(PC2) fire
@@ -78,7 +79,7 @@ int main(void){
 	//int logo = 6;
 	int voltageDisplay = 4;
 	int modeDisplay = 64;
-	int currentDisplay = 68;
+	int currentDisplay = 69;
 
 	//times
 	int lowBlink = 120;//blinking at low input
@@ -108,7 +109,7 @@ int main(void){
 	float cellIndicator = cellIndicatorReset;//C = I(A) / U(V) decrease
 
 	//power
-	//float power;
+	float power;
 
 	//voltages
 	float voltage;
@@ -236,10 +237,6 @@ int main(void){
 			lcd_puts("  ");
 		}
 
-		//display logo
-		//lcd_goto(logo);
-		//lcd_puts("Bart");
-
 		//Display voltage
 		lcd_goto(voltageDisplay);
 		sprintf(buffer, "%1.1fV", voltage);
@@ -247,8 +244,8 @@ int main(void){
 
 		//Display mode
 		lcd_goto(modeDisplay);
-		if(mode == 2) lcd_puts("m   ");
-		else if(mode == 1) lcd_puts("ph  ");
+		if(mode == 2) lcd_puts("direct");
+		else if(mode == 1) lcd_puts("p-l ");
 		else if(mode == 0) lcd_puts("pwm ");
 
 		//Display current
@@ -311,7 +308,7 @@ int main(void){
 			option = 4;
 			lcd_clrscr();
 			lcd_puts("menu");
-			_delay_ms(unlocking);
+			_delay_ms(press);
 		}
 
 		while(menuToggle == 1){
@@ -327,10 +324,10 @@ int main(void){
 
 			lcd_goto(modeDisplay);
 
-			if (option == 1) lcd_puts(">M      ");
-			if (option == 2) lcd_puts(">P M    ");
-			if (option == 3) lcd_puts(">N P M  ");
-			if (option == 4) lcd_puts(">L N P M");
+			if (option == 1) lcd_puts(">D      ");
+			if (option == 2) lcd_puts(">P D    ");
+			if (option == 3) lcd_puts(">N P D  ");
+			if (option == 4) lcd_puts(">L N P D");
 			if (option == 5) lcd_puts(">c L N P");
 			if (option == 6) lcd_puts(">a c L N");
 
@@ -344,13 +341,13 @@ int main(void){
 
 					while(preheatDutyAdjust == 1){
 						lcd_goto(dutyDisplay);
-						lcd_puts("PH duty:");
+						lcd_puts("PL duty:");
 						percentDuty = preheatDuty / 2.55;
 						itoa(percentDuty, buffer, 10);
 						lcd_goto(modeDisplay);
-						lcd_puts("<");
+						lcd_puts(">");
 						lcd_puts(buffer);
-						lcd_puts(">    ");
+						lcd_puts("    ");
 
 						if(!(PINC & fire))
 						{
@@ -373,46 +370,46 @@ int main(void){
 					while(preheatTimeAdjust == 1){
 						if (preheatTime > 5) preheatTime = 1;
 						lcd_goto(dutyDisplay);
-						lcd_puts("PH time:");
+						lcd_puts("PL time:");
 						lcd_goto(modeDisplay);
 
 						if(preheatTime == 1){
 							itoa(pht1, buffer, 10);
-							lcd_puts("<");
+							lcd_puts(">");
 							lcd_puts(buffer);
-							lcd_puts("ms> ");
+							lcd_puts("ms  ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 2){
 							itoa(pht2, buffer, 10);
-							lcd_puts("<");
+							lcd_puts(">");
 							lcd_puts(buffer);
-							lcd_puts("ms> ");
+							lcd_puts("ms  ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 3){
 							itoa(pht3, buffer, 10);
-							lcd_puts("<");
+							lcd_puts(">");
 							lcd_puts(buffer);
-							lcd_puts("ms> ");
+							lcd_puts("ms  ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 4){
 							itoa(pht4, buffer, 10);
-							lcd_puts("<");
+							lcd_puts(">");
 							lcd_puts(buffer);
-							lcd_puts("ms> ");
+							lcd_puts("ms  ");
 							_delay_ms(press);
 						}
 
 						if(preheatTime == 5){
 							itoa(pht5, buffer, 10);
-							lcd_puts("<");
+							lcd_puts(">");
 							lcd_puts(buffer);
-							lcd_puts("ms> ");
+							lcd_puts("ms  ");
 							_delay_ms(press);
 						}
 
@@ -444,7 +441,7 @@ int main(void){
 					while(calibrate == 1){
 						lcd_goto(dutyDisplay);
 						lcd_puts("amp cal:");
-						sprintf(buffer, "<%1.f>", cellIndicator);
+						sprintf(buffer, ">%1.f", cellIndicator);
 						lcd_goto(modeDisplay);
 						lcd_puts(buffer);
 						lcd_puts("    ");
@@ -475,7 +472,7 @@ int main(void){
 					while(maxDecreaseSet == 1){
 						lcd_goto(dutyDisplay);
 						lcd_puts("max dec:");
-						sprintf(buffer, "<%1.1fV>", maxDecrease);
+						sprintf(buffer, ">%1.1fV", maxDecrease);
 						lcd_goto(modeDisplay);
 						lcd_puts(buffer);
 						lcd_puts("   ");
@@ -511,7 +508,7 @@ int main(void){
 		counter = 1;
 
 		//plus
-		while(!(PINC & plus) && (PINC & minus) && (PINC & fire) && (duty < 250) && (mode != 2)){
+		while(!(PINC & plus) && (PINC & minus) && (PINC & fire) && (duty < 230) && (mode != 2)){
 			duty = duty + 1;
 
 			if(counter < slowSteps){
@@ -590,8 +587,8 @@ int main(void){
 				sprintf(buffer, "%1.1fV", voltage);
 				lcd_puts(buffer);
 
-				lcd_goto(currentDisplay);
-				lcd_puts("    ");
+				//lcd_goto(currentDisplay);
+				//lcd_puts("    ");
 
 
 
@@ -679,6 +676,9 @@ int main(void){
 				fullCurrent = cellIndicator * fullDecrease;
 				loadCurrent = fullCurrent * (duty / 255);
 
+				//power
+				power = loadCurrent * load;
+
 
 				//Display voltage
 				lcd_goto(voltageDisplay);
@@ -691,12 +691,23 @@ int main(void){
 				lcd_puts(buffer);
 				lcd_puts("   ");
 
+				//diplay watts
+				lcd_goto(modeDisplay);
+				lcd_puts("    ");
+				lcd_goto(modeDisplay);
+				sprintf(buffer, "%1.fW", power);
+				lcd_puts(buffer);
+
 
 			}
 
 			//preheat warming
 			while(fullDecrease < maxDecrease && load > lowVoltage && !(PINC & fire) && (mode == 1) && (PINC & minus) && (PINC & plus)){
 				OCR1A = preheatDuty;
+
+				lcd_goto(modeDisplay);
+				lcd_puts("pre-load");
+
 				if (preheatTime == 1) _delay_ms(pht1);
 				if (preheatTime == 2) _delay_ms(pht2);
 				if (preheatTime == 3) _delay_ms(pht3);
@@ -731,7 +742,8 @@ int main(void){
 					fullCurrent = cellIndicator * fullDecrease;
 					loadCurrent = fullCurrent * (duty / 255);
 
-					//loadDecrease = idle - load;
+					//power
+					power = loadCurrent * load;
 
 					//Display voltage
 					lcd_goto(voltageDisplay);
@@ -743,6 +755,13 @@ int main(void){
 					sprintf(buffer, "%1.fA", loadCurrent);
 					lcd_puts(buffer);
 					lcd_puts("   ");
+
+					//diplay watts
+					lcd_goto(modeDisplay);
+					lcd_puts("    ");
+					lcd_goto(modeDisplay);
+					sprintf(buffer, "%1.fW", power);
+					lcd_puts(buffer);
 				}
 			}//preheat warming
 			//pwm off
@@ -751,7 +770,3 @@ int main(void){
 		}//warming
 	}//main loop
 }//program
-
-
-
-
