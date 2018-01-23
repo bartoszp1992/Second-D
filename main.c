@@ -444,7 +444,7 @@ int main(void){
 						sprintf(buffer, ">%1.f", cellIndicator);
 						lcd_goto(modeDisplay);
 						lcd_puts(buffer);
-						lcd_puts("    ");
+						lcd_puts("     ");
 
 						if(!(PINC & fire) && (PINC & plus) && (PINC & minus)){
 							calibrate = 0;
@@ -770,3 +770,7 @@ int main(void){
 		}//warming
 	}//main loop
 }//program
+
+
+
+
