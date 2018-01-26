@@ -6,7 +6,7 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1.6
+ *      v3.1.7
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
@@ -15,6 +15,7 @@
  *      3.1.4- correct times ant voltages
  *      3.1.5- now load voltage is counted, not measured.
  *      3.1.6- added power counter
+ *      3.1.7- minor fixes
  *
  *      Pinout:
  *      25(PC2) fire
@@ -713,6 +714,8 @@ int main(void){
 				if (preheatTime == 3) _delay_ms(pht3);
 				if (preheatTime == 4) _delay_ms(pht4);
 				if (preheatTime == 5) _delay_ms(pht5);
+				lcd_goto(modeDisplay);
+				lcd_puts("        ");
 
 				while(fullDecrease < maxDecrease && load > lowVoltage && !(PINC & fire) && (mode == 1) && (PINC & minus) && (PINC & plus)){
 					OCR1A = duty;
@@ -770,7 +773,3 @@ int main(void){
 		}//warming
 	}//main loop
 }//program
-
-
-
-
