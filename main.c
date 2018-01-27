@@ -6,7 +6,7 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.1.7
+ *      v3.2
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
@@ -16,6 +16,7 @@
  *      3.1.5- now load voltage is counted, not measured.
  *      3.1.6- added power counter
  *      3.1.7- minor fixes
+ *      3.2- added PL, added char variables
  *
  *      Pinout:
  *      25(PC2) fire
@@ -81,6 +82,45 @@ int main(void){
 	int voltageDisplay = 4;
 	int modeDisplay = 64;
 	int currentDisplay = 69;
+
+	//eng
+	/*
+	char author[] = "Bart's";
+	char driver[] = "Second 3";
+	char low[] = "Low bat!";
+	char scircuit[] = "Short!";
+	char nload[] = "No load";
+	char menu[] = "menu";
+	char pl[] = "pre-load";
+	char directMode[] = "direcct";
+	char pwmMode[] = "pwm";
+	char plMode[] = "p-l";
+	char hold[] = "hold";
+	char plDuty[] = "pl duty:";
+	char plTime[] = "pl time";
+	char ampCal[] = "amp cal:";
+	char lock[] = "locked";
+	char maxDec[] = "max dec:";*/
+
+	//pl
+	char author[] = "Bart's";
+	char driver[] = "Second 3";
+	char low[] = "slabnie";
+	char scircuit[] = "zwarcie!";
+	char nload[] = "brak ato";
+	char menu[] = "menu";
+	char pl[] = "rozgrzew";
+	char directMode[] = "mech";
+	char pwmMode[] = "pwm";
+	char plMode[] = "gw";
+	char hold[] = "trzymaj";
+	char plDuty[] = "moc:";
+	char plTime[] = "czas:";
+	char ampCal[] = "kalibruj";
+	char lock[] = "blokada";
+	char maxDec[] = "spadek";
+
+
 
 	//times
 	int lowBlink = 120;//blinking at low input
@@ -188,9 +228,9 @@ int main(void){
 	PORTD |= (1<<backlight);
 	lcd_init();
 	lcd_clrscr();
-	lcd_puts("Bart's");
+	lcd_puts_d(author);
 	lcd_goto(modeDisplay);
-	lcd_puts("Second 3");
+	lcd_puts_d(driver);
 	_delay_ms(splash);
 	lcd_clrscr();
 
@@ -215,7 +255,7 @@ int main(void){
 
 			lcd_clrscr();
 			lcd_goto(modeDisplay);
-			lcd_puts("Low bat!");
+			lcd_puts_d(low);
 
 			PORTD ^= (1<<warm) | (1<<backlight);
 			_delay_ms(lowBlink);
@@ -245,14 +285,14 @@ int main(void){
 
 		//Display mode
 		lcd_goto(modeDisplay);
-		if(mode == 2) lcd_puts("direct");
-		else if(mode == 1) lcd_puts("p-l ");
-		else if(mode == 0) lcd_puts("pwm ");
+		if(mode == 2) lcd_puts_d(directMode);
+		else if(mode == 1) lcd_puts_d(plMode);
+		else if(mode == 0) lcd_puts_d(pwmMode);
 
 		//Display current
 		if (mode != 2){
 			lcd_goto(currentDisplay);
-			lcd_puts("0A");
+			lcd_puts_d("0A");
 		}
 
 
@@ -262,16 +302,16 @@ int main(void){
 			PORTD &= ~(1<<backlight);
 
 			lcd_goto(dutyDisplay);
-			lcd_puts("   ");
+			lcd_puts_d("   ");
 
 			//Display voltage
 			lcd_goto(voltageDisplay);
 			sprintf(buffer, "%1.1fV", voltage);
-			lcd_puts(buffer);
+			lcd_puts_d(buffer);
 
 			//DM
 			lcd_goto(modeDisplay);
-			lcd_puts("locked  ");
+			lcd_puts_d(lock);
 
 			PORTC |= (1<<stb);
 			_delay_ms(lockBlink);
@@ -282,7 +322,7 @@ int main(void){
 				lcd_init();
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("hold... ");
+				lcd_puts_d(hold);
 				PORTD |= (1<<backlight);
 				_delay_ms(unlocking);
 
@@ -294,9 +334,9 @@ int main(void){
 					PORTD |= (1<<backlight);
 					lcd_init();
 					lcd_clrscr();
-					lcd_puts("Bart's");
+					lcd_puts_d(author);
 					lcd_goto(modeDisplay);
-					lcd_puts("Second 3");
+					lcd_puts_d(driver);
 					_delay_ms(splash);
 					lcd_clrscr();
 				}
@@ -308,7 +348,7 @@ int main(void){
 			menuToggle = 1;
 			option = 4;
 			lcd_clrscr();
-			lcd_puts("menu");
+			lcd_puts_d(menu);
 			_delay_ms(press);
 		}
 
@@ -342,7 +382,7 @@ int main(void){
 
 					while(preheatDutyAdjust == 1){
 						lcd_goto(dutyDisplay);
-						lcd_puts("PL duty:");
+						lcd_puts(plDuty);
 						percentDuty = preheatDuty / 2.55;
 						itoa(percentDuty, buffer, 10);
 						lcd_goto(modeDisplay);
@@ -371,7 +411,7 @@ int main(void){
 					while(preheatTimeAdjust == 1){
 						if (preheatTime > 5) preheatTime = 1;
 						lcd_goto(dutyDisplay);
-						lcd_puts("PL time:");
+						lcd_puts(plTime);
 						lcd_goto(modeDisplay);
 
 						if(preheatTime == 1){
@@ -441,7 +481,7 @@ int main(void){
 					_delay_ms(press);
 					while(calibrate == 1){
 						lcd_goto(dutyDisplay);
-						lcd_puts("amp cal:");
+						lcd_puts(ampCal);
 						sprintf(buffer, ">%1.f", cellIndicator);
 						lcd_goto(modeDisplay);
 						lcd_puts(buffer);
@@ -472,7 +512,7 @@ int main(void){
 					_delay_ms(press);
 					while(maxDecreaseSet == 1){
 						lcd_goto(dutyDisplay);
-						lcd_puts("max dec:");
+						lcd_puts(maxDec);
 						sprintf(buffer, ">%1.1fV", maxDecrease);
 						lcd_goto(modeDisplay);
 						lcd_puts(buffer);
@@ -589,7 +629,7 @@ int main(void){
 				lcd_puts(buffer);
 
 				//lcd_goto(currentDisplay);
-				//lcd_puts("    ");
+				//lcd_puts_d("    ");
 
 
 
@@ -624,7 +664,7 @@ int main(void){
 				lcd_init();
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("Short!!");
+				lcd_puts_d(scircuit);
 				_delay_ms(splash);
 			}
 
@@ -634,7 +674,7 @@ int main(void){
 				TCCR1A &= ~(1<<COM1A1);
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("No load");
+				lcd_puts_d(nload);
 				_delay_ms(splash);
 			}
 
@@ -644,7 +684,7 @@ int main(void){
 				TCCR1A &= ~(1<<COM1A1);
 				lcd_clrscr();
 				lcd_goto(modeDisplay);
-				lcd_puts("Low bat!");
+				lcd_puts_d(low);
 				_delay_ms(splash);
 			}
 
@@ -707,7 +747,7 @@ int main(void){
 				OCR1A = preheatDuty;
 
 				lcd_goto(modeDisplay);
-				lcd_puts("pre-load");
+				lcd_puts(pl);
 
 				if (preheatTime == 1) _delay_ms(pht1);
 				if (preheatTime == 2) _delay_ms(pht2);
@@ -773,3 +813,7 @@ int main(void){
 		}//warming
 	}//main loop
 }//program
+
+
+
+
