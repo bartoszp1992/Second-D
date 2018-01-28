@@ -6,7 +6,7 @@
  *      for ATmega 328P
  *
  *      Second-D
- *      v3.2
+ *      v3.3
  *
  *      changelog:
  *      3.1.1- rewrited for 8x2 disply
@@ -17,6 +17,7 @@
  *      3.1.6- added power counter
  *      3.1.7- minor fixes
  *      3.2- added PL, added char variables
+ *      3.3- added miniatures
  *
  *      Pinout:
  *      25(PC2) fire
@@ -82,6 +83,67 @@ int main(void){
 	int voltageDisplay = 4;
 	int modeDisplay = 64;
 	int currentDisplay = 69;
+
+	//custom chars
+	lcd_init();
+	//arrow
+	lcd_command(_BV(LCD_CGRAM)+0*8);
+	lcd_putc(0b00000);
+	lcd_putc(0b10000);
+	lcd_putc(0b11100);
+	lcd_putc(0b11111);
+	lcd_putc(0b11100);
+	lcd_putc(0b10000);
+	lcd_putc(0b00000);
+	lcd_putc(0b00000);
+	lcd_goto(0);
+	//pwm
+	lcd_command(_BV(LCD_CGRAM)+1*8);
+	lcd_putc(0b00000);
+	lcd_putc(0b00000);
+	lcd_putc(0b00000);
+	lcd_putc(0b01110);
+	lcd_putc(0b01010);
+	lcd_putc(0b01010);
+	lcd_putc(0b11011);
+	lcd_putc(0b00000);
+	lcd_goto(0);
+	//preheat
+	lcd_command(_BV(LCD_CGRAM)+2*8);
+	lcd_putc(0b10010);
+	lcd_putc(0b01001);
+	lcd_putc(0b10010);
+	lcd_putc(0b00000);
+	lcd_putc(0b11111);
+	lcd_putc(0b11111);
+	lcd_putc(0b10001);
+	lcd_putc(0b00000);
+	lcd_goto(0);
+
+	//direct
+	lcd_command(_BV(LCD_CGRAM)+3*8);
+	lcd_putc(0b00100);
+	lcd_putc(0b01110);
+	lcd_putc(0b11111);
+	lcd_putc(0b00100);
+	lcd_putc(0b00100);
+	lcd_putc(0b00100);
+	lcd_putc(0b00100);
+	lcd_putc(0b00000);
+	lcd_goto(0);
+
+	//lock
+	lcd_command(_BV(LCD_CGRAM)+4*8);
+	lcd_putc(0b01110);
+	lcd_putc(0b10001);
+	lcd_putc(0b10001);
+	lcd_putc(0b11111);
+	lcd_putc(0b11011);
+	lcd_putc(0b11011);
+	lcd_putc(0b11111);
+	lcd_putc(0b00000);
+	lcd_goto(0);
+
 
 	//eng
 	/*
@@ -270,7 +332,8 @@ int main(void){
 		if(mode != 2){
 			lcd_goto(dutyDisplay);
 			percentDuty = duty / 2.55;
-			sprintf(buffer, ">%d", percentDuty);
+			lcd_putc(0);
+			sprintf(buffer, "%d", percentDuty);
 			lcd_puts(buffer);
 		}
 		else{
@@ -292,7 +355,7 @@ int main(void){
 		//Display current
 		if (mode != 2){
 			lcd_goto(currentDisplay);
-			lcd_puts_d("0A");
+			lcd_puts("0A");
 		}
 
 
@@ -364,13 +427,56 @@ int main(void){
 			}
 
 			lcd_goto(modeDisplay);
+			lcd_putc(0);
 
-			if (option == 1) lcd_puts(">D      ");
-			if (option == 2) lcd_puts(">P D    ");
-			if (option == 3) lcd_puts(">N P D  ");
-			if (option == 4) lcd_puts(">L N P D");
-			if (option == 5) lcd_puts(">c L N P");
-			if (option == 6) lcd_puts(">a c L N");
+			lcd_goto(modeDisplay+1);
+
+			if (option == 1){
+				lcd_putc(3);
+				lcd_puts("        ");
+			}
+			if (option == 2){
+				lcd_putc(2);
+				lcd_puts(" ");
+				lcd_putc(3);
+				lcd_puts("        ");
+			}
+			if (option == 3){
+				lcd_putc(1);
+				lcd_puts(" ");
+				lcd_putc(2);
+				lcd_puts(" ");
+				lcd_putc(3);
+				lcd_puts("        ");
+
+			}
+			if (option == 4){
+				lcd_putc(4);
+				lcd_puts(" ");
+				lcd_putc(1);
+				lcd_puts(" ");
+				lcd_putc(2);
+				lcd_puts(" ");
+				lcd_putc(3);
+				lcd_puts("        ");
+
+			}
+			if (option == 5){
+				lcd_puts("c ");
+				lcd_putc(4);
+				lcd_puts(" ");
+				lcd_putc(1);
+				lcd_puts(" ");
+				lcd_putc(2);
+
+			}
+			if (option == 6){
+				lcd_puts("a c ");
+				lcd_putc(4);
+				lcd_puts(" ");
+				lcd_putc(1);
+				lcd_puts(" ");
+			}
 
 
 			if (!(PINC & fire) && (PINC & minus)){
@@ -557,8 +663,9 @@ int main(void){
 				PORTD ^= (1<<warm);
 
 				lcd_goto(dutyDisplay);
+				lcd_putc(0);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, ">%d", percentDuty);
+				sprintf(buffer, "%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			if(counter > slowSteps){
@@ -566,8 +673,9 @@ int main(void){
 				PORTD ^= (1<<warm);
 
 				lcd_goto(dutyDisplay);
+				lcd_putc(0);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, ">%d", percentDuty);
+				sprintf(buffer, "%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			counter = counter + 1;
@@ -581,8 +689,9 @@ int main(void){
 				PORTD ^= (1<<warm);
 
 				lcd_goto(dutyDisplay);
+				lcd_putc(0);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, ">%d", percentDuty);
+				sprintf(buffer, "%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			if(counter > slowSteps){
@@ -590,8 +699,9 @@ int main(void){
 				PORTD ^= (1<<warm);
 
 				lcd_goto(dutyDisplay);
+				lcd_putc(0);
 				percentDuty = duty / 2.55;
-				sprintf(buffer, ">%d", percentDuty);
+				sprintf(buffer, "%d", percentDuty);
 				lcd_puts(buffer);
 			}
 			counter = counter + 1;
