@@ -367,6 +367,10 @@ int main(void){
 			lcd_goto(dutyDisplay);
 			lcd_puts_d("   ");
 
+			ADCSRA |= (1<<ADSC); //start
+			while(ADCSRA & (1<<ADSC));
+			voltage = (float)ADC / 50;
+
 			//Display voltage
 			lcd_goto(voltageDisplay);
 			sprintf(buffer, "%1.1fV", voltage);
@@ -380,6 +384,10 @@ int main(void){
 			_delay_ms(lockBlink);
 			PORTC &= ~(1<<stb);
 			_delay_ms(lockPause);
+
+			if(voltage < lowVoltage){
+				locked = 0;
+			}
 
 			if(!(PINC & fire) && !(PINC & minus) && (PINC & plus)){
 				lcd_init();
